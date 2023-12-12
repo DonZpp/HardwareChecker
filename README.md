@@ -1,0 +1,2 @@
+# HardwareChecker
+ 学校买了一批机器要验收，检查每一台的配置，然后就有了这些代码。使用方法，先在样板机上运行GenModelMachineConf生成当前计算机配置（会写入一个excel文件里），在其它机器上运行CheckHardwareConf.py来进行检查（它会读取之前生成的Excel文件并与当前机器进行比较）
