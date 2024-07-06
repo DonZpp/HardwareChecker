@@ -73,38 +73,43 @@ def CheckListItem(dicItemLocal, dicItemModel):
             if v != dicItemModel[k]:
                 return False
     return True
-            
-       
 
-def CheckList(lstLocal, lstModel, strKey):
+
+def CheckList(lstLocal, lstModel : list, strKey):
+    lstBak = list()
+    for itemModel in lstModel:
+        lstBak.append(itemModel)
     setEq = list()
     for itemLocal in lstLocal:
         for itemModel in lstModel:
             if CheckListItem(itemLocal, itemModel) :
                 setEq.append(itemLocal)
+                lstModel.remove(itemModel)
                 break
     if len(setEq) != len(lstLocal):
-        print('sth error!', strKey, 'Local:', lstLocal, 'Model:', lstModel)
-        raise
+        raise Exception('sth error!'+ strKey+ '     Local:'+ lstLocal+ '     Model:'+ lstBak)
 
 
+# 检查入口
 def Check():
     dicModel = ReadConfigExcel()
     dicLocal = GetConfig.GetConfig()
 
-    for k, v in dicLocal.items() :
-        if type(v) != type(list()):
-            if v != dicModel[k]:
-                print('sth error!', k, 'Local:', dicLocal[k], 'Model:', dicModel[k])
-                raise
-        else:
-            if(type(dicModel[k]) != type(list())):
-                print('sth error!', k, 'Local:', dicLocal[k], 'Model:', dicModel[k])
-                raise
+    for strCheckItemName, checkItemConf in dicLocal.items() :
+        if strCheckItemName in dicModel.keys():
+            if type(checkItemConf) != type(list()):
+                if checkItemConf != dicModel[strCheckItemName]:
+                    strErr = 'sth error!'+ strCheckItemName+ '  Local:'+ dicLocal[strCheckItemName]+ '    Model:'+ dicModel[strCheckItemName]
+                    raise Exception(strErr)
             else:
-                CheckList(v, dicModel[k], k)
+                if(type(dicModel[strCheckItemName]) != type(list())):
+                    raise Exception('sth error!' +  strCheckItemName+ '   Local:'+ dicLocal[strCheckItemName]+ '     Model:'+ dicModel[strCheckItemName])
+                else:
+                    CheckList(checkItemConf, dicModel[strCheckItemName], strCheckItemName)
 
-    print('Good!!!!!!!!!!!!!!')
 
-
-Check()
+try:
+    Check()
+    print("Done!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+except Exception as e:
+    print(e.args)

@@ -6,7 +6,7 @@ import os
 import subprocess
 
 
-WORK_DIR = 'Z:\\Project\\HardwareConfigurationCheck\\'
+WORK_DIR = '.\\'
 CONFIG_FILE = 'ModelConfig.xlsx'
 CONFIG_SHEET = 'Conf'
 
@@ -132,4 +132,3 @@ def GetConfig():
 def PrintConfigInfo():
     for k, v in GetConfig().items():
         print(k, '|', v)
-
