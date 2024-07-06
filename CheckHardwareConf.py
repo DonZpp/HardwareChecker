@@ -17,6 +17,14 @@ TYPE_LIST_ITEM = GetConfig.TYPE_LIST_ITEM
 TYPE_RECORDS = GetConfig.TYPE_RECORDS
 
 
+# 直接raise和捕获Exception会导致很多原生的Exception被处理，
+# 因此声明一个新的LocalException来避免
+class LocalException(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
+
+
+# 读取列表检查项的某一个检查点的参数
 def ReadListItem(lst : list, ws : openpyxl.worksheet.worksheet, row, nItemRec):
     i = 0
     dic = {}
@@ -29,6 +37,8 @@ def ReadListItem(lst : list, ws : openpyxl.worksheet.worksheet, row, nItemRec):
     lst.append(dic)
     return row
 
+
+# 读取列表检查项（有多个相同的点需要检查）
 def ReadList(dicConf : dict, ws : openpyxl.worksheet.worksheet, row):
     strListName = ws.cell(row = row, column = NUM_COL_KEY).value
     dicConf[strListName] = list()
@@ -41,6 +51,8 @@ def ReadList(dicConf : dict, ws : openpyxl.worksheet.worksheet, row):
         i = i + 1
     return row
 
+
+# 读取某一个检查项，该检查项只有一个数据需要检查
 def ReadRecords(dicConf : dict, ws : openpyxl.worksheet.worksheet, row):
     strKey = ws.cell(row=row, column=NUM_COL_KEY).value
     strVal = ws.cell(row=row, column=NUM_COL_VAL).value
@@ -54,7 +66,7 @@ ReadObjFunc = {
 }
 
 
-
+# 读取Excel配置表
 def ReadConfigExcel():
     wb = openpyxl.open(WORK_DIR + CONFIG_FILE)
     ws = wb[CONFIG_SHEET]
@@ -67,6 +79,7 @@ def ReadConfigExcel():
     return dicConf
 
 
+# 比对列表检查项的某一项
 def CheckListItem(dicItemLocal, dicItemModel):
     for k, v in dicItemLocal.items():
         if type(v) != type(list()):
@@ -75,19 +88,22 @@ def CheckListItem(dicItemLocal, dicItemModel):
     return True
 
 
+# 比对列表检查项
 def CheckList(lstLocal, lstModel : list, strKey):
-    lstBak = list()
+    # lstModel，不影响原lstModel
+    lstBakModel = list()
     for itemModel in lstModel:
-        lstBak.append(itemModel)
+        lstBakModel.append(itemModel)
     setEq = list()
     for itemLocal in lstLocal:
-        for itemModel in lstModel:
+        for itemModel in lstBakModel:
             if CheckListItem(itemLocal, itemModel) :
                 setEq.append(itemLocal)
+                # 检查完一项就移除一项，否则如果lstLocal中的多项与lstBakModel中的一项相等，会出现反复比对的bug
                 lstModel.remove(itemModel)
                 break
     if len(setEq) != len(lstLocal):
-        raise Exception('sth error!'+ strKey+ '     Local:'+ lstLocal+ '     Model:'+ lstBak)
+        raise LocalException('sth error!'+ strKey+ '     Local:'+ lstLocal+ '     Model:'+ lstBakModel)
 
 
 # 检查入口
@@ -97,13 +113,14 @@ def Check():
 
     for strCheckItemName, checkItemConf in dicLocal.items() :
         if strCheckItemName in dicModel.keys():
+            # TODO 该检查封装成函数以应对变化
             if type(checkItemConf) != type(list()):
                 if checkItemConf != dicModel[strCheckItemName]:
                     strErr = 'sth error!'+ strCheckItemName+ '  Local:'+ dicLocal[strCheckItemName]+ '    Model:'+ dicModel[strCheckItemName]
-                    raise Exception(strErr)
+                    raise LocalException(strErr)
             else:
                 if(type(dicModel[strCheckItemName]) != type(list())):
-                    raise Exception('sth error!' +  strCheckItemName+ '   Local:'+ dicLocal[strCheckItemName]+ '     Model:'+ dicModel[strCheckItemName])
+                    raise LocalException('sth error!' +  strCheckItemName+ '   Local:'+ dicLocal[strCheckItemName]+ '     Model:'+ dicModel[strCheckItemName])
                 else:
                     CheckList(checkItemConf, dicModel[strCheckItemName], strCheckItemName)
 
@@ -111,5 +128,5 @@ def Check():
 try:
     Check()
     print("Done!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-except Exception as e:
+except LocalException as e:
     print(e.args)
